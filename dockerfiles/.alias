@@ -1,0 +1,6 @@
+alias vi="nvim"
+alias vilua="nvim $HOME/dotfiles/nvim/init.lua"
+# alias vilua="$HOME/.config/nvim/init.lua"
+alias virc="nvim $HOME/.bashrc"
+alias py="poetry run python3"
+alias la="ls -la"

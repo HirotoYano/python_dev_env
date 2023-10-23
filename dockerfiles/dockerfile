@@ -1,0 +1,78 @@
+FROM python:3.10.12-slim
+
+ARG USER
+ARG UID
+ARG GID
+
+ENV USER=${USER}
+ENV UID=${UID}
+ENV GID=${GID}
+ENV POETRY_HOME="/home/${USER}/.local/bin"
+
+RUN useradd -l -u ${UID} -s /bin/bash -m ${USER} \
+ && groupmod -g ${GID} ${USER}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    npm \
+    ripgrep \
+    python3-venv \
+    sed \
+    jq \
+    build-essential \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -LO https://github.com/sharkdp/fd/releases/download/v8.7.0/fd_8.7.0_amd64.deb \
+ && dpkg -i fd_8.7.0_amd64.deb
+
+RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage \
+ && chmod u+x nvim.appimage \
+ && ./nvim.appimage --appimage-extract \
+ && ln -s /squashfs-root/AppRun /usr/bin/nvim
+
+RUN chmod u-s,g-s \
+    /usr/sbin/unix_chkpwd \
+    /usr/bin/chsh \
+    /usr/bin/newgrp \
+    /usr/bin/chage \
+    /usr/bin/wall \
+    /usr/bin/chfn \
+    /usr/bin/passwd \
+    /usr/bin/expiry \
+    /usr/bin/umount \
+    /usr/bin/gpasswd \
+    /usr/bin/mount \
+    /usr/bin/su
+
+WORKDIR /home/${USER}/workspace
+USER ${USER}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+RUN git clone --depth 1 \
+    "https://github.com/wbthomason/packer.nvim" \
+    "/home/${USER}/.local/share/nvim/site/pack/packer/start/packer.nvim" \
+ && rm -rf /home/${USER}/.local/share/nvim/site/pack/packer/start/packer.nvim/.git \
+    /home/${USER}/.local/share/nvim/site/pack/packer/start/packer.nvim/Dockerfile
+
+RUN git clone --depth 1 "https://github.com/HirotoYano/dotfiles.git" "/home/${USER}/dotfiles" \
+ && rm -rf /home/${USER}/dotfiles/.git \
+ && bash "/home/${USER}/dotfiles/install.sh"
+
+RUN git clone --depth 1 "https://github.com/junegunn/fzf.git" "/home/${USER}/.fzf" \
+ && rm -rf /home/${USER}/.fzf/.git \
+    /home/${USER}/.fzf/Dockerfile \
+ && "/home/${USER}/.fzf/install"
+
+COPY .alias /home/${USER}/.alias
+RUN cat "/home/${USER}/.alias" >> "/home/${USER}/.bashrc"
+
+CMD ["/bin/bash"]
+
+HEALTHCHECK --interval=5m --timeout=3s \
+  CMD curl -f http://localhost/ || exit 1
+
