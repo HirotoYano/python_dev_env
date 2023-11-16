@@ -5,11 +5,18 @@
 
 `
 USER=
+
 UID=
+
 GID=
 `
 
 ## 使い方
-以下のコマンドで開発環境を立ち上げ
+- 環境立ち上げ
+`fish env_launch.sh -s コンテナ名`
 
-`fish env_launch.sh コンテナ名`
+- コンテナにログイン
+`fish env_launch.sh -e コンテナ名`
+
+- 環境削除
+`fish env_launch.sh -d コンテナ名`
